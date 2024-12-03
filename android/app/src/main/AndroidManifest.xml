@@ -1,16 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+
     <application
         android:label="assignment"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
         <!-- Google Sign-In Permissions -->
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -31,18 +34,18 @@
             </intent-filter>
         </activity>
 
-
+        <!-- Flutter Configuration -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDXX3exK2-UMFiOdt1lXlhTbCoRJjzgDT8
-" />
-
-
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDXX3exK2-UMFiOdt1lXlhTbCoRJjzgDT8" />
     </application>
 
+    <!-- Intent Queries -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />

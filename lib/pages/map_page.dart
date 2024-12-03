@@ -1,140 +1,131 @@
 import 'dart:async';
-
-import 'package:assignment/const.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class MapPage extends StatefulWidget {
-  const MapPage({super.key});
+class UserDetailMap extends StatefulWidget {
+  final String userId;
+
+  const UserDetailMap({super.key, required this.userId});
 
   @override
-  State<MapPage> createState() => _MapPageState();
+  State<UserDetailMap> createState() => _UserDetailMapState();
 }
 
-class _MapPageState extends State<MapPage> {
-  Location locationController = new Location();
+class _UserDetailMapState extends State<UserDetailMap> {
   final Completer<GoogleMapController> mapController =
       Completer<GoogleMapController>();
-  static const LatLng pGooglePlex = LatLng(28.6139, 77.2088);
-
-  static const LatLng pUser = LatLng(28.5876, 77.1690);
-  LatLng? currentPos = null;
-
-  Map<PolylineId, Polyline> polylines = {};
+  LatLng? currentPos;
+  LatLng? startPos;
+  LatLng? endPos;
+  final Set<Polyline> _polylines = <Polyline>{};
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    getLocationUpdates().then(
-      (_) => {
-        getPolylinePoints().then((coordinates) => {
-              generatePolyline(coordinates),
-            }),
-      },
-    );
+    fetchUserLocation();
+  }
+
+  Future<void> fetchUserLocation() async {
+    DocumentReference userRef =
+        FirebaseFirestore.instance.collection('users').doc(widget.userId);
+
+    try {
+      print("Fetching user data for: ${widget.userId}"); // Debugging output
+      DocumentSnapshot snapshot = await userRef.get();
+      if (snapshot.exists) {
+        Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+        double startLat = data['startPoint']['lat'];
+        double startLng = data['startPoint']['lng'];
+        double endLat = data['endPoint']['lat'];
+        double endLng = data['endPoint']['lng'];
+
+        setState(() {
+          startPos = LatLng(startLat, startLng);
+          endPos = LatLng(endLat, endLng);
+          currentPos = LatLng(endLat, endLng);
+
+          // Add the polyline between the start and end positions
+          _polylines.add(
+            Polyline(
+              polylineId: const PolylineId("route"),
+              visible: true,
+              points: [startPos!, endPos!],
+              color: Colors.blue,
+              width: 4,
+            ),
+          );
+        });
+
+        if (currentPos != null) {
+          cameraToPos(currentPos!);
+        }
+      } else {
+        print("User document does not exist."); // Debugging output
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("User location not found")),
+        );
+      }
+    } catch (e) {
+      print("Error fetching user data: $e"); // Debugging output
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text("Error fetching user data: $e")), // Show the actual error
+      );
+    }
+  }
+
+  Future<void> cameraToPos(LatLng pos) async {
+    try {
+      final GoogleMapController controller = await mapController.future;
+      CameraPosition newCameraPos = CameraPosition(target: pos, zoom: 13);
+      await controller
+          .animateCamera(CameraUpdate.newCameraPosition(newCameraPos));
+    } catch (e) {
+      print("Error moving camera: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('User Location'),
+        backgroundColor: Colors.deepPurple,
+      ),
       body: currentPos == null
-          ? const Center(
-              child: Text("Loading..."),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : GoogleMap(
-              onMapCreated: ((GoogleMapController controller) =>
-                  mapController.complete(controller)),
+              onMapCreated: (GoogleMapController controller) =>
+                  mapController.complete(controller),
               initialCameraPosition:
-                  CameraPosition(target: pGooglePlex, zoom: 13),
+                  CameraPosition(target: currentPos!, zoom: 13),
               markers: {
                 Marker(
-                    markerId: MarkerId("currentloaction"),
-                    icon: BitmapDescriptor.defaultMarker,
-                    position: currentPos!),
-                Marker(
-                    markerId: MarkerId("sourceLocation"),
-                    icon: BitmapDescriptor.defaultMarker,
-                    position: pUser),
-                Marker(
-                    markerId: MarkerId("destinationLocation"),
-                    icon: BitmapDescriptor.defaultMarker,
-                    position: pGooglePlex),
+                  markerId: const MarkerId("currentLocation"),
+                  icon: BitmapDescriptor.defaultMarker,
+                  position: currentPos!,
+                ),
+                if (startPos != null)
+                  Marker(
+                    markerId: const MarkerId("startLocation"),
+                    position: startPos!,
+                    infoWindow: const InfoWindow(title: "Start Location"),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueGreen),
+                  ),
+                if (endPos != null)
+                  Marker(
+                    markerId: const MarkerId("endLocation"),
+                    position: endPos!,
+                    infoWindow: const InfoWindow(title: "End Location"),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueRed),
+                  ),
               },
-              polylines: Set<Polyline>.of(polylines.values),
+              polylines: _polylines,
             ),
     );
-  }
-
-  Future<void> cameraToPos(LatLng pos) async {
-    final GoogleMapController controller = await mapController.future;
-    CameraPosition newCameraPos = CameraPosition(target: pos, zoom: 13);
-    await controller
-        .animateCamera(CameraUpdate.newCameraPosition(newCameraPos));
-  }
-
-  Future<void> getLocationUpdates() async {
-    bool serviceEnabled;
-    PermissionStatus permissionGranted;
-
-    serviceEnabled = await locationController.serviceEnabled();
-    if (serviceEnabled) {
-      serviceEnabled = await locationController.requestService();
-    } else {
-      return;
-    }
-
-    permissionGranted = await locationController.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await locationController.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
-        return;
-      }
-    }
-    locationController.onLocationChanged.listen((LocationData currentLocation) {
-      if (currentLocation.latitude != null &&
-          currentLocation.longitude != null) {
-        setState(() {
-          currentPos =
-              LatLng(currentLocation.latitude!, currentLocation.longitude!);
-          cameraToPos(currentPos!);
-        });
-      }
-    });
-  }
-
-  Future<List<LatLng>> getPolylinePoints() async {
-    List<LatLng> polylineCoordinates = [];
-    PolylinePoints polylinePoints = PolylinePoints();
-    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      googleApiKey: GOOGLE_MAP_API_KEY,
-      request: PolylineRequest(
-        origin: PointLatLng(pUser.latitude, pUser.longitude),
-        destination: PointLatLng(pGooglePlex.latitude, pGooglePlex.longitude),
-        mode: TravelMode.driving,
-      ),
-    );
-    if (result.points.isNotEmpty) {
-      result.points.forEach((PointLatLng point) {
-        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-      });
-    } else {
-      print(result.errorMessage);
-    }
-    return polylineCoordinates;
-  }
-
-  void generatePolyline(List<LatLng> polylineCoordinates) {
-    PolylineId id = PolylineId("poly");
-    Polyline polyline = Polyline(
-        polylineId: id,
-        color: Colors.blue,
-        points: polylineCoordinates,
-        width: 8);
-    setState(() {
-      polylines[id] = polyline;
-    });
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:assignment/components/my_textfield.dart';
@@ -14,11 +15,14 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final firrstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
   void signUserUp() async {
+    // Show loading indicator
     showDialog(
         context: context,
         builder: (context) {
@@ -29,9 +33,22 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       if (passwordController.text == confirmPasswordController.text) {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailController.text,
+        // Create a new user in Firebase Auth
+        UserCredential userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
           password: passwordController.text,
+        );
+
+        // Get user's unique ID
+        String userId = userCredential.user!.uid;
+
+        // Add user details to Firestore
+        addUserDetails(
+          userId: userId,
+          firstName: firrstNameController.text.trim(),
+          lastName: lastNameController.text.trim(),
+          email: emailController.text.trim(),
         );
       } else {
         showErrorMessage("Passwords don't match!");
@@ -41,6 +58,27 @@ class _RegisterPageState extends State<RegisterPage> {
       Navigator.pop(context);
       showErrorMessage(e.code);
     }
+  }
+
+  Future addUserDetails({
+    required String userId,
+    required String firstName,
+    required String lastName,
+    required String email,
+  }) async {
+    // Get the default location (can be updated later)
+    const double defaultLatitude = 0.0;
+    const double defaultLongitude = 0.0;
+
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'location': {
+        'latitude': defaultLatitude,
+        'longitude': defaultLongitude,
+      },
+    });
   }
 
   void showErrorMessage(String message) {
@@ -70,13 +108,13 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
               // logo
-              const Icon(
-                Icons.lock,
-                size: 50,
-              ),
+              // const Icon(
+              //   Icons.lock,
+              //   size: 50,
+              // ),
 
               const SizedBox(height: 25),
 
@@ -91,7 +129,20 @@ class _RegisterPageState extends State<RegisterPage> {
 
               const SizedBox(height: 25),
 
-              // Email textfield
+              // first name textfield
+              MyTextField(
+                controller: firrstNameController,
+                hintText: 'First Name',
+                obscureText: false,
+              ),
+              const SizedBox(height: 10),
+              //last name
+              MyTextField(
+                controller: lastNameController,
+                hintText: 'Last Name',
+                obscureText: false,
+              ),
+              const SizedBox(height: 10),
               MyTextField(
                 controller: emailController,
                 hintText: 'Email',
