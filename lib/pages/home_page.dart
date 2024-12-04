@@ -239,6 +239,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class HomePage extends StatefulWidget {
@@ -415,24 +416,65 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Attendance"),
-        backgroundColor: Colors.deepPurple,
+        title: Text(
+          "Attendance",
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: Colors.deepPurple.shade600,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.logout, color: Colors.white),
             onPressed: signUserOut,
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: Column(
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: Text(user?.displayName ?? "No Name"),
+              accountEmail: Text(user?.email ?? "No Email"),
+              currentAccountPicture: CircleAvatar(
+                backgroundImage: user?.photoURL != null
+                    ? NetworkImage(user!.photoURL!)
+                    : null,
+                child: user?.photoURL == null
+                    ? Icon(Icons.person, size: 40)
+                    : null,
+              ),
+              decoration: BoxDecoration(color: Colors.deepPurple),
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text("Logout"),
+              onTap: signUserOut,
+            ),
+          ],
+        ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchUsers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(color: Colors.deepPurple),
+            );
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No users found."));
+            return Center(
+              child: Text(
+                "No users found.",
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            );
           }
 
           final users = snapshot.data!;
@@ -444,35 +486,34 @@ class _HomePageState extends State<HomePage> {
               final userData = users[index];
               final documentId = userData['id'];
               final name = userData['firstName'] ?? "Unknown User";
-              final locations = userData['dailyLocation']?['locations'] ?? [];
 
               return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Colors.deepPurple,
-                    child: Icon(Icons.person, color: Colors.white),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.deepPurple.shade100,
+                    child:
+                        Icon(Icons.person, color: Colors.deepPurple.shade600),
                   ),
                   title: Text(
                     name,
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Recent Locations:"),
-                      ...locations.map<Widget>((location) {
-                        final timestamp = location['timestamp']?.toDate();
-                        return Text(
-                          "Lat: ${location['lat']}, Lng: ${location['lng']}, Time: ${timestamp ?? 'N/A'}",
-                          style: const TextStyle(fontSize: 12),
-                        );
-                      }).toList(),
-                    ],
+                  subtitle: Text(
+                    "Tap to view details",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 18),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -493,6 +534,326 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+
+// aman code ---------------------------------------------------------------------
+
+// import 'package:flutter/material.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'firstpage.dart';
+
+// void main() {
+//   runApp(const MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return const MaterialApp(
+//       home: HomePageui(),
+//     );
+//   }
+// }
+
+// class HomePageui extends StatelessWidget {
+//   const HomePageui({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text(
+//           "Attendance",
+//           style: TextStyle(
+//             color: Colors.white,
+//           ),
+//         ),
+//         backgroundColor: Colors.deepPurple,
+//         iconTheme: const IconThemeData(
+//           color: Colors.white,
+//         ),
+//         actionsIconTheme: const IconThemeData(
+//           color: Colors.white,
+//         ),
+//       ),
+//       drawer: const NavigationDrawer(),
+//       body: Column(
+//         children: [
+//           const CustomTile(),
+//           const DateSelector(), // Calendar Section Added
+//           Expanded(child: AttendancePage()), // Members List with attendance status
+//           const LocationFooter(), // Footer for location
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// class NavigationDrawer extends StatelessWidget {
+//   const NavigationDrawer({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     User? user = FirebaseAuth.instance.currentUser; // Get the current user
+
+//     return Drawer(
+//       child: ListView(
+//         padding: EdgeInsets.zero,
+//         children: [
+//           DrawerHeader(
+//             decoration: const BoxDecoration(color: Colors.deepPurple),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 CircleAvatar(
+//                   radius: 30,
+//                     backgroundImage: const AssetImage('images/Saurabh.jpg'),
+//                   // backgroundImage: user?.photoURL != null
+//                   //     ? NetworkImage(user!.photoURL!)
+//                   //     : const NetworkImage('images/Saurabh.jpg'),
+//                 ),
+//                 const SizedBox(height: 10),
+//                 // crossAxisAlignment: CrossAxisAlignment.start,
+//                 Text(
+//                   user?.displayName ?? 'No Name',
+//                   style: const TextStyle(color: Colors.white, fontSize: 18),
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//                 const SizedBox(height: 5),
+//                 Text(
+//                   user?.email ?? 'No Email',
+//                   style: const TextStyle(color: Colors.white70, fontSize: 14),
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//               ],
+//             ),
+//           ),
+//           ListTile(
+//             leading: const Icon(Icons.checklist),
+//             title: const Text("Attendance"),
+//             onTap: () {
+//               Navigator.pop(context);
+//             },
+//           ),
+//           const ListTile(
+//             leading: Icon(Icons.schedule),
+//             title: Text("Schedules"),
+//           ),
+//           if (user != null) ...[
+//             ListTile(
+//               leading: const Icon(Icons.account_circle),
+//               title: Text("Logged in as: ${user.displayName ?? 'No Name'}"),
+//             ),
+//             ListTile(
+//               leading: const Icon(Icons.email),
+//               title: Text("Email: ${user.email ?? 'No Email'}"),
+//             ),
+//           ],
+//           const ListTile(
+//             leading: Icon(Icons.password),
+//             title: Text("Change Password"),
+//           ),
+//           const ListTile(
+//             leading: Icon(Icons.graphic_eq),
+//             title: Text("Activity"),
+//           ),
+//           ListTile(
+//             leading: const Icon(Icons.logout),
+//             title: const Text("Logout"),
+//             onTap: () async {
+//               await FirebaseAuth.instance.signOut();
+//               Navigator.pushReplacement(
+//                 context,
+//                 MaterialPageRoute(builder: (context) => const FirstPage()),
+//               );
+//             },
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// class AttendancePage extends StatelessWidget {
+  
+//   AttendancePage({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return ListView.builder(
+//       padding: const EdgeInsets.all(10),
+//       itemCount: members.length,
+//       itemBuilder: (context, index) {
+//         return Card(
+//           elevation: 3,
+//           margin: const EdgeInsets.symmetric(vertical: 2),
+//           child: ListTile(
+//             leading: CircleAvatar(
+//               backgroundImage: members[index]['image']!.startsWith('http')
+//                   ? NetworkImage(members[index]['image']!)
+//                   : AssetImage(members[index]['image']!) as ImageProvider,
+//             ),
+//             title: Text(
+//               members[index]['name']!,
+//               style: const TextStyle(fontWeight: FontWeight.bold),
+//             ),
+//             subtitle: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text("ID: ${members[index]['id']}"),
+//                 Row(
+//                   children: [
+//                     const Icon(Icons.arrow_upward, color: Colors.green, size: 16),
+//                     const SizedBox(width: 5),
+//                     Text(members[index]['checkIn']!),
+//                     const SizedBox(width: 10),
+//                     const Icon(Icons.arrow_downward, color: Colors.red, size: 16),
+//                     const SizedBox(width: 5),
+//                     Text(members[index]['checkOut']!),
+//                   ],
+//                 ),
+//               ],
+//             ),
+//             trailing: Row(
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 IconButton(
+//                   icon: const Icon(Icons.calendar_month_outlined, color: Colors.black),
+//                   onPressed: () {
+//                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+//                       content: Text("${members[index]['name']}'s attendance marked!"),
+//                     ));
+//                   },
+//                 ),
+//                 IconButton(
+//                   icon: const Icon(Icons.my_location, color: Colors.blue),
+//                   onPressed: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (context) => const LocationFooter(),
+//                       ),
+//                     );
+//                   },
+//                 ),
+//               ],
+//             ),
+//           ),
+//         );
+//       },
+//     );
+//   }
+// }
+
+// class CustomTile extends StatelessWidget {
+//   const CustomTile({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       color: Colors.grey[200],
+//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+//       child: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//         children: [
+//           const Row(
+//             children: [
+//               CircleAvatar(
+//                 backgroundColor: Colors.deepPurple,
+//                 child: Icon(Icons.group, color: Colors.white),
+//               ),
+//               SizedBox(width: 10),
+//               Text(
+//                 "All Members",
+//                 style: TextStyle(
+//                   fontSize: 16,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//             ],
+//           ),
+//           TextButton(
+//             onPressed: () {},
+//             child: const Text(
+//               "Change",
+//               style: TextStyle(
+//                 color: Colors.blue,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// class DateSelector extends StatelessWidget {
+//   const DateSelector({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       color: Colors.white60,
+//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+//       child: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//         children: [
+//           Row(
+//             children: [
+//               IconButton(
+//                 onPressed: () {},
+//                 icon: const Icon(Icons.chevron_left),
+//               ),
+//               const Text(
+//                 "Tue, Aug 31 2022",
+//                 style: TextStyle(
+//                   fontSize: 16,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//               IconButton(
+//                 onPressed: () {},
+//                 icon: const Icon(Icons.chevron_right),
+//               ),
+//             ],
+//           ),
+//           IconButton(
+//             onPressed: () {},
+//             icon: const Icon(Icons.calendar_today),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// class LocationFooter extends StatelessWidget {
+//   const LocationFooter({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       color: Colors.blue,
+//       padding: const EdgeInsets.symmetric(vertical: 12),
+//       child: const Row(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(Icons.location_on, color: Colors.white),
+//           SizedBox(width: 8),
+//           Text("View Location", style: TextStyle(color: Colors.white)),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+
+
+
+
+// ------------------------------------------------------------------
 
 
 
