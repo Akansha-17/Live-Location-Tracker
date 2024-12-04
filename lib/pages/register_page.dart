@@ -212,7 +212,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 children: [
                   // google button
                   SquareTile(
-                      onTap: () => AuthService().signInWithGoogle(),
+                      onTap: () => AuthService().signInWithGoogle(context),
                       imagePath: 'assets/images/google.png'),
                 ],
               ),

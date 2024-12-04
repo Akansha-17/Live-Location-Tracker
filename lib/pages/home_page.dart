@@ -240,7 +240,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:assignment/pages/map_page.dart'; // Assuming you have a MapPage
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -254,12 +254,12 @@ class _HomePageState extends State<HomePage> {
   final user = FirebaseAuth.instance.currentUser;
 
   Timer? _timer;
-  DateTime? _lastRecordedTime;
 
   @override
   void initState() {
     super.initState();
-    _initializeLocationTracking();
+    _initializeDailyLocation();
+    _startTrackingLocation();
   }
 
   @override
@@ -268,76 +268,51 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Future<void> _initializeLocationTracking() async {
-    await _checkPermissionsAndRequest();
-    await _checkGpsAndEnable();
-    if (user != null) {
-      _initializeUserLocationData();
-      _startTrackingLocation();
-    }
-  }
-
-  Future<void> _checkPermissionsAndRequest() async {
-    PermissionStatus status = await Permission.locationWhenInUse.status;
-    if (status.isDenied || status.isPermanentlyDenied) {
-      status = await Permission.locationWhenInUse.request();
-      if (status.isDenied || status.isPermanentlyDenied) {
-        debugPrint("Location permissions denied.");
-        return;
-      }
-    }
-    debugPrint("Location permissions granted.");
-  }
-
-  Future<void> _checkGpsAndEnable() async {
-    bool isGpsEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!isGpsEnabled) {
-      await Geolocator.openLocationSettings();
-      isGpsEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!isGpsEnabled) {
-        debugPrint("GPS not enabled.");
-        return;
-      }
-    }
-    debugPrint("GPS is enabled.");
-  }
-
-  Future<void> _initializeUserLocationData() async {
+  Future<void> _initializeDailyLocation() async {
     try {
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+      if (user != null) {
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user!.uid);
 
-      final userDoc =
-          FirebaseFirestore.instance.collection('users').doc(user!.uid);
-      final userData = await userDoc.get();
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
 
-      if (userData.exists && userData.data()?['dailyLocation'] == null) {
-        // Initialize `startPoint` and `endPoint` if not already present.
-        await userDoc.set({
-          'dailyLocation': {
-            'startPoint': {
-              'lat': position.latitude,
-              'lng': position.longitude,
-              'timestamp': Timestamp.fromDate(DateTime.now()),
+        final userData = await userDoc.get();
+        final lastRecordedDate = userData.data()?['dailyLocation']?['date'];
+
+        if (lastRecordedDate == null ||
+            (lastRecordedDate is Timestamp &&
+                lastRecordedDate.toDate().isBefore(today))) {
+          final position = await Geolocator.getCurrentPosition(
+            locationSettings:
+                const LocationSettings(accuracy: LocationAccuracy.high),
+          );
+
+          await userDoc.update({
+            'dailyLocation': {
+              'date': Timestamp.fromDate(today),
+              'startPoint': {
+                'lat': position.latitude,
+                'lng': position.longitude,
+                'timestamp': Timestamp.fromDate(now),
+              },
+              'endPoint': {
+                'lat': position.latitude,
+                'lng': position.longitude,
+                'timestamp': Timestamp.fromDate(now),
+              },
+              'locations': [],
             },
-            'endPoint': {
-              'lat': position.latitude,
-              'lng': position.longitude,
-              'timestamp': Timestamp.fromDate(DateTime.now()),
-            },
-            'locations': [],
-          },
-        }, SetOptions(merge: true));
-        debugPrint("User location data initialized.");
+          });
+          debugPrint("Daily location reset for the new day.");
+        }
       }
     } catch (e) {
-      debugPrint("Error initializing user location data: $e");
+      debugPrint("Error resetting daily location: $e");
     }
   }
 
-  void _startTrackingLocation() async {
+  void _startTrackingLocation() {
     _timer = Timer.periodic(const Duration(minutes: 1), (_) async {
       await _updateLocation();
     });
@@ -352,51 +327,50 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
-      final now = DateTime.now();
-      if (_lastRecordedTime == null ||
-          now.difference(_lastRecordedTime!).inMinutes >= 1) {
-        _lastRecordedTime = now;
+      final userDoc =
+          FirebaseFirestore.instance.collection('users').doc(user!.uid);
+      final userData = await userDoc.get();
 
-        final userDoc =
-            FirebaseFirestore.instance.collection('users').doc(user!.uid);
-        final userData = await userDoc.get();
+      if (userData.exists) {
+        final lastLocation = userData['dailyLocation']['endPoint'];
+        final now = DateTime.now();
+        final distance = Geolocator.distanceBetween(
+          lastLocation['lat'],
+          lastLocation['lng'],
+          position.latitude,
+          position.longitude,
+        );
 
-        if (userData.exists) {
-          final lastLocation = userData['dailyLocation']['endPoint'];
-          final distance = Geolocator.distanceBetween(
-            lastLocation['lat'],
-            lastLocation['lng'],
-            position.latitude,
-            position.longitude,
-          );
-
-          if (distance > 50) {
-            // Update only if moved more than 50 meters.
-            await userDoc.update({
-              'dailyLocation.locations': FieldValue.arrayUnion([
-                {
-                  'lat': position.latitude,
-                  'lng': position.longitude,
-                  'timestamp': Timestamp.fromDate(now),
-                },
-              ]),
-              'dailyLocation.endPoint': {
+        if (distance > 50) {
+          await userDoc.update({
+            'dailyLocation.locations': FieldValue.arrayUnion([
+              {
                 'lat': position.latitude,
                 'lng': position.longitude,
                 'timestamp': Timestamp.fromDate(now),
-              },
-            });
-
-            debugPrint(
-                'Location updated: ${position.latitude}, ${position.longitude}');
-          } else {
-            debugPrint('No significant movement detected.');
-          }
+              }
+            ]),
+            'dailyLocation.endPoint': {
+              'lat': position.latitude,
+              'lng': position.longitude,
+              'timestamp': Timestamp.fromDate(now),
+            },
+          });
+          debugPrint(
+              "Location updated: ${position.latitude}, ${position.longitude}");
         }
       }
     } catch (e) {
-      debugPrint('Error updating location: $e');
+      debugPrint("Error updating location: $e");
     }
+  }
+
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      final date = timestamp.toDate();
+      return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+    }
+    return "N/A";
   }
 
   Future<List<Map<String, dynamic>>> fetchUsers() async {
@@ -420,16 +394,14 @@ class _HomePageState extends State<HomePage> {
           "Attendance",
           style: GoogleFonts.poppins(
             fontSize: 20,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Colors.deepPurple.shade600,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
-            onPressed: signUserOut,
-          ),
-        ],
+        backgroundColor: Colors.blue,
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
       ),
       drawer: Drawer(
         child: Column(
@@ -445,7 +417,15 @@ class _HomePageState extends State<HomePage> {
                     ? Icon(Icons.person, size: 40)
                     : null,
               ),
-              decoration: BoxDecoration(color: Colors.deepPurple),
+              decoration: BoxDecoration(color: Colors.blue),
+            ),
+            const ListTile(
+              leading: Icon(Icons.graphic_eq),
+              title: Text("Attendance"),
+            ),
+            const ListTile(
+              leading: Icon(Icons.abc_outlined),
+              title: Text("About"),
             ),
             ListTile(
               leading: Icon(Icons.logout),
@@ -459,7 +439,7 @@ class _HomePageState extends State<HomePage> {
         future: fetchUsers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(color: Colors.deepPurple),
             );
           }
@@ -479,56 +459,144 @@ class _HomePageState extends State<HomePage> {
 
           final users = snapshot.data!;
 
-          return ListView.builder(
+          return ListView(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final userData = users[index];
-              final documentId = userData['id'];
-              final name = userData['firstName'] ?? "Unknown User";
-
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            children: [
+              // New UI Block: "All Members" and Date Navigation
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Column(
+                  children: [
+                    // Top row with "All Members" and "Change"
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue.shade100,
+                              child: Icon(Icons.group,
+                                  color: Colors.blue.shade600),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "All Members",
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                elevation: 3,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.deepPurple.shade100,
-                    child:
-                        Icon(Icons.person, color: Colors.deepPurple.shade600),
-                  ),
-                  title: Text(
-                    name,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              ),
+              // Existing ListView.builder
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: users.length,
+                itemBuilder: (context, index) {
+                  final userData = users[index];
+                  final documentId = userData['id'];
+                  final name = userData['firstName'] ?? "Unknown User";
+
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  subtitle: Text(
-                    "Tap to view details",
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 18),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UserDetailMap(
-                          userId: documentId,
+                    elevation: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.deepPurple.shade100,
+                        child: Icon(Icons.person,
+                            color: Colors.deepPurple.shade600),
+                      ),
+                      title: Text(
+                        name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    );
-                  },
-                ),
-              );
-            },
+                      subtitle: Row(
+                        children: [
+                          Transform.rotate(
+                            angle: -0.5,
+                            child: Icon(Icons.arrow_upward,
+                                size: 16, color: Colors.green),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatTimestamp(userData['dailyLocation']
+                                ?['startPoint']?['timestamp']),
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Transform.rotate(
+                            angle: 0.5,
+                            child: Icon(Icons.arrow_downward,
+                                size: 16, color: Colors.red),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatTimestamp(userData['dailyLocation']
+                                ?['endPoint']?['timestamp']),
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: Icon(Icons.location_on, size: 18),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserDetailMap(
+                              userId: documentId,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ],
           );
         },
+      ),
+      bottomSheet: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => MapPage()), // Navigate to MapPage
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: Text(
+            "Show on Map",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              color: Colors.blue,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }

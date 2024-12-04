@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Colors.white,
       body: SafeArea(
           child: Center(
         child: SingleChildScrollView(
@@ -159,14 +159,29 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 50),
 
               // google button
-              // google + apple sign in buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // google button
-                  SquareTile(
-                      onTap: () => AuthService().signInWithGoogle(),
-                      imagePath: 'assets/images/google.png'),
+                  Column(
+                    children: [
+                      // Google image
+                      Image.asset(
+                        'assets/images/google.png',
+                        width: 50, // Adjust the size as needed
+                        height: 50,
+                      ),
+                      const SizedBox(height: 8),
+                      // Google text
+                      const Text(
+                        'Google',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
 

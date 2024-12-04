@@ -1,131 +1,107 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 
-class UserDetailMap extends StatefulWidget {
-  final String userId;
-
-  const UserDetailMap({super.key, required this.userId});
+class MapPage extends StatefulWidget {
+  const MapPage({super.key});
 
   @override
-  State<UserDetailMap> createState() => _UserDetailMapState();
+  State<MapPage> createState() => _MapPageState();
 }
 
-class _UserDetailMapState extends State<UserDetailMap> {
+class _MapPageState extends State<MapPage> {
   final Completer<GoogleMapController> mapController =
       Completer<GoogleMapController>();
-  LatLng? currentPos;
-  LatLng? startPos;
-  LatLng? endPos;
-  final Set<Polyline> _polylines = <Polyline>{};
+  LatLng? currentUserLocation; // Current user's location (nullable)
+  Set<Marker> userMarkers = {}; // Store all user markers
 
   @override
   void initState() {
     super.initState();
-    fetchUserLocation();
-  }
-
-  Future<void> fetchUserLocation() async {
-    DocumentReference userRef =
-        FirebaseFirestore.instance.collection('users').doc(widget.userId);
-
-    try {
-      print("Fetching user data for: ${widget.userId}"); // Debugging output
-      DocumentSnapshot snapshot = await userRef.get();
-      if (snapshot.exists) {
-        Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-        double startLat = data['startPoint']['lat'];
-        double startLng = data['startPoint']['lng'];
-        double endLat = data['endPoint']['lat'];
-        double endLng = data['endPoint']['lng'];
-
-        setState(() {
-          startPos = LatLng(startLat, startLng);
-          endPos = LatLng(endLat, endLng);
-          currentPos = LatLng(endLat, endLng);
-
-          // Add the polyline between the start and end positions
-          _polylines.add(
-            Polyline(
-              polylineId: const PolylineId("route"),
-              visible: true,
-              points: [startPos!, endPos!],
-              color: Colors.blue,
-              width: 4,
-            ),
-          );
-        });
-
-        if (currentPos != null) {
-          cameraToPos(currentPos!);
-        }
-      } else {
-        print("User document does not exist."); // Debugging output
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("User location not found")),
-        );
-      }
-    } catch (e) {
-      print("Error fetching user data: $e"); // Debugging output
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text("Error fetching user data: $e")), // Show the actual error
-      );
-    }
-  }
-
-  Future<void> cameraToPos(LatLng pos) async {
-    try {
-      final GoogleMapController controller = await mapController.future;
-      CameraPosition newCameraPos = CameraPosition(target: pos, zoom: 13);
-      await controller
-          .animateCamera(CameraUpdate.newCameraPosition(newCameraPos));
-    } catch (e) {
-      print("Error moving camera: $e");
-    }
+    getCurrentUserLocation(); // Set up current user's location
+    getUsersLocations(); // Fetch users' locations
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Location'),
-        backgroundColor: Colors.deepPurple,
-      ),
-      body: currentPos == null
-          ? const Center(child: CircularProgressIndicator())
+      body: currentUserLocation == null
+          ? const Center(
+              child:
+                  CircularProgressIndicator()) // Show loading until location is fetched
           : GoogleMap(
               onMapCreated: (GoogleMapController controller) =>
                   mapController.complete(controller),
-              initialCameraPosition:
-                  CameraPosition(target: currentPos!, zoom: 13),
-              markers: {
-                Marker(
-                  markerId: const MarkerId("currentLocation"),
-                  icon: BitmapDescriptor.defaultMarker,
-                  position: currentPos!,
-                ),
-                if (startPos != null)
-                  Marker(
-                    markerId: const MarkerId("startLocation"),
-                    position: startPos!,
-                    infoWindow: const InfoWindow(title: "Start Location"),
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueGreen),
-                  ),
-                if (endPos != null)
-                  Marker(
-                    markerId: const MarkerId("endLocation"),
-                    position: endPos!,
-                    infoWindow: const InfoWindow(title: "End Location"),
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueRed),
-                  ),
-              },
-              polylines: _polylines,
+              initialCameraPosition: CameraPosition(
+                target:
+                    currentUserLocation!, // Set initial position to current user's location
+                zoom: 13,
+              ),
+              markers: userMarkers, // Display all user markers
             ),
     );
+  }
+
+  // Fetch the current logged-in user's location
+  Future<void> getCurrentUserLocation() async {
+    // Get the current logged-in user
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // Get current location using Geolocator
+      Position position = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.high, // Set desired accuracy
+          distanceFilter: 10, // Distance filter for updates (optional)
+        ),
+      );
+
+      // Set the current user location
+      setState(() {
+        currentUserLocation =
+            LatLng(position.latitude, position.longitude); // Update location
+      });
+    }
+  }
+
+  // Fetch users' endpoint locations from Firestore and display them on the map
+  Future<void> getUsersLocations() async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    var usersCollection = firestore.collection('users');
+    var userDocs = await usersCollection.get();
+
+    // Clear any existing markers before adding new ones
+    Set<Marker> markers = {};
+
+    for (var doc in userDocs.docs) {
+      var userData = doc.data();
+      if (userData['dailyLocation'] != null &&
+          userData['dailyLocation']['endPoint'] != null) {
+        double lat = userData['dailyLocation']['endPoint']['lat'];
+        double lng = userData['dailyLocation']['endPoint']['lng'];
+        String userId = doc.id;
+        String firstName = userData['firstName'];
+        String lastName = userData['lastName'];
+
+        // Create a marker with a user icon and display the user's name in the info window
+        final marker = Marker(
+          markerId: MarkerId(userId),
+          position: LatLng(lat, lng),
+          infoWindow: InfoWindow(
+              title: '$firstName $lastName'), // Show only user's name
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueAzure), // Set a default user icon color
+        );
+
+        markers.add(marker); // Add the marker to the set
+      }
+    }
+
+    setState(() {
+      userMarkers = markers; // Update the state with new markers
+    });
   }
 }
