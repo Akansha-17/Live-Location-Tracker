@@ -67,7 +67,7 @@ This project was created by our team of four:
 - _Backend:_ Firebase
 - _Maps Integration:_ Google Map API
 
-- ![WhatsApp Image 2024-12-05 at 22 37 45_f3dcc4c2](https://github.com/user-attachments/assets/c65e0b58-b46d-4553-ac57-c4245ca27a7e | width=100)
+
 - ![WhatsApp Image 2024-12-05 at 22 37 45_66d8ed4b](https://github.com/user-attachments/assets/62ed26ec-94aa-4617-b94b-5b748d5a1db7)
 - ![WhatsApp Image 2024-12-05 at 22 37 46_08ef1522](https://github.com/user-attachments/assets/2162b34b-797b-4ac3-b106-4ba1be51936a)
 - ![WhatsApp Image 2024-12-05 at 18 28 32_e062fae1](https://github.com/user-attachments/assets/b817b559-c08d-41d0-aad9-c6d21cd613d6)
