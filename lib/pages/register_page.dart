@@ -101,7 +101,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Colors.white,
       body: SafeArea(
           child: Center(
         child: SingleChildScrollView(
@@ -207,14 +207,47 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 50),
 
               // google button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // google button
-                  SquareTile(
-                      onTap: () => AuthService().signInWithGoogle(context),
-                      imagePath: 'assets/images/google.png'),
-                ],
+              GestureDetector(
+                onTap: () => AuthService()
+                    .signInWithGoogle(context), // Google Sign-In function
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 60.0),
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 3), // Shadow position
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Google Icon
+                      Image.asset(
+                        'assets/images/google.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      const SizedBox(width: 12), // Space between icon and text
+
+                      // Button Text
+                      const Text(
+                        'Sign in with Google',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
               const SizedBox(height: 50),
