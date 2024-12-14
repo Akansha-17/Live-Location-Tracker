@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:assignment/components/my_textfield.dart';
 import 'package:assignment/components/my_button.dart';
 import 'package:assignment/services/auth_service.dart';

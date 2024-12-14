@@ -253,8 +253,7 @@ class _UserDetailMapState extends State<UserDetailMap> {
                           final lng = loc['lng'];
                           final address = loc['address'] ??
                               "Lat: $lat, Lng: $lng"; // Show lat/lng if address is null
-                          final time =
-                              _formatTimestamp(loc['timestamp']) ?? "Unknown";
+                          final time = _formatTimestamp(loc['timestamp']);
 
                           return ListTile(
                             leading: const Icon(Icons.location_on),

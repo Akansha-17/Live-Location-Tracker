@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:assignment/components/my_textfield.dart';
 import 'package:assignment/components/my_button.dart';
 import 'package:assignment/services/auth_service.dart';
-import 'package:assignment/components/square_title.dart';
 
 class RegisterPage extends StatefulWidget {
   final Function()? onTap;
