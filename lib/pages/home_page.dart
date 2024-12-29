@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:assignment/pages/profile_page.dart';
 import 'package:assignment/pages/user_detail_map.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:assignment/pages/map_page.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,18 +21,48 @@ class _HomePageState extends State<HomePage> {
   final user = FirebaseAuth.instance.currentUser;
 
   Timer? _timer;
+  String? profileImage;
+  String? firstName;
 
   @override
   void initState() {
     super.initState();
+    _checkAndRequestPermissions();
     _initializeDailyLocation();
     _startTrackingLocation();
+    _fetchUserData();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _checkAndRequestPermissions() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Handle the case when permission is denied
+        debugPrint("Location permission is denied.");
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Handle the case when permission is permanently denied
+      debugPrint(
+          "Location permission is permanently denied. Please enable it in the app settings.");
+      return;
+    }
+
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      debugPrint("Location permission granted.");
+      await _initializeDailyLocation(); // Proceed with your location logic
+    }
   }
 
   Future<void> _initializeDailyLocation() async {
@@ -83,50 +115,81 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _updateLocation() async {
+  Future<void> _saveDailyTravelHistory() async {
     try {
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 10,
-        ),
-      );
+      if (user != null) {
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user!.uid);
 
-      final userDoc =
-          FirebaseFirestore.instance.collection('users').doc(user!.uid);
-      final userData = await userDoc.get();
+        final userData = await userDoc.get();
+        final dailyLocation = userData.data()?['dailyLocation'];
 
-      if (userData.exists) {
-        final lastLocation = userData['dailyLocation']['endPoint'];
-        final now = DateTime.now();
-        final distance = Geolocator.distanceBetween(
-          lastLocation['lat'],
-          lastLocation['lng'],
-          position.latitude,
-          position.longitude,
-        );
+        if (dailyLocation != null) {
+          final date = dailyLocation['date'];
+          final formattedDate = DateFormat('yyyy-MM-dd').format(date.toDate());
 
-        if (distance > 50) {
           await userDoc.update({
-            'dailyLocation.locations': FieldValue.arrayUnion([
-              {
-                'lat': position.latitude,
-                'lng': position.longitude,
-                'timestamp': Timestamp.fromDate(now),
-              }
-            ]),
-            'dailyLocation.endPoint': {
-              'lat': position.latitude,
-              'lng': position.longitude,
-              'timestamp': Timestamp.fromDate(now),
-            },
+            'travelHistory.$formattedDate': {
+              'date': date,
+              'startPoint': dailyLocation['startPoint'],
+              'endPoint': dailyLocation['endPoint'],
+              'locations': dailyLocation['locations'],
+            }
           });
-          debugPrint(
-              "Location updated: ${position.latitude}, ${position.longitude}");
+
+          debugPrint("Daily travel history saved for $formattedDate.");
         }
       }
     } catch (e) {
-      debugPrint("Error updating location: $e");
+      debugPrint("Error saving daily travel history: $e");
+    }
+  }
+
+  Future<void> _updateLocation() async {
+    try {
+      if (user != null) {
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user!.uid);
+
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        final userData = await userDoc.get();
+        final lastRecordedDate = userData.data()?['dailyLocation']?['date'];
+
+        if (lastRecordedDate == null ||
+            (lastRecordedDate is Timestamp &&
+                lastRecordedDate.toDate().isBefore(today))) {
+          // Save current day's data to history
+          await _saveDailyTravelHistory();
+
+          // Reset daily location
+          final position = await Geolocator.getCurrentPosition(
+            locationSettings:
+                const LocationSettings(accuracy: LocationAccuracy.high),
+          );
+
+          await userDoc.update({
+            'dailyLocation': {
+              'date': Timestamp.fromDate(today),
+              'startPoint': {
+                'lat': position.latitude,
+                'lng': position.longitude,
+                'timestamp': Timestamp.fromDate(now),
+              },
+              'endPoint': {
+                'lat': position.latitude,
+                'lng': position.longitude,
+                'timestamp': Timestamp.fromDate(now),
+              },
+              'locations': [],
+            },
+          });
+          debugPrint("Daily location reset for the new day.");
+        }
+      }
+    } catch (e) {
+      debugPrint("Error resetting daily location: $e");
     }
   }
 
@@ -145,6 +208,22 @@ class _HomePageState extends State<HomePage> {
       userData['id'] = doc.id;
       return userData;
     }).toList();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      if (user != null) {
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user!.uid);
+        final userData = await userDoc.get();
+        setState(() {
+          firstName = userData.data()?['firstName'] ?? "No Name";
+          profileImage = userData.data()?['profileImage'];
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching user data: $e");
+    }
   }
 
   void signUserOut() {
@@ -171,18 +250,28 @@ class _HomePageState extends State<HomePage> {
       drawer: Drawer(
         child: Column(
           children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(user?.displayName ?? "No Name"),
-              accountEmail: Text(user?.email ?? "No Email"),
-              currentAccountPicture: CircleAvatar(
-                backgroundImage: user?.photoURL != null
-                    ? NetworkImage(user!.photoURL!)
-                    : null,
-                child: user?.photoURL == null
-                    ? Icon(Icons.person, size: 40, color: Colors.white)
-                    : null,
+            GestureDetector(
+              onTap: () {
+                // Navigate to the ProfilePage
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfilePage(),
+                  ),
+                );
+              },
+              child: UserAccountsDrawerHeader(
+                accountName: Text(firstName ?? "No Name"),
+                accountEmail: Text(user?.email ?? "No Email"),
+                currentAccountPicture: CircleAvatar(
+                  backgroundImage:
+                      profileImage != null ? NetworkImage(profileImage!) : null,
+                  child: profileImage == null
+                      ? const Icon(Icons.person, size: 40, color: Colors.white)
+                      : null,
+                ),
+                decoration: const BoxDecoration(color: Colors.blue),
               ),
-              decoration: BoxDecoration(color: Colors.blue),
             ),
             const ListTile(
               leading: Icon(Icons.graphic_eq),
@@ -193,8 +282,8 @@ class _HomePageState extends State<HomePage> {
               title: Text("About"),
             ),
             ListTile(
-              leading: Icon(Icons.logout),
-              title: Text("Logout"),
+              leading: const Icon(Icons.logout),
+              title: const Text("Logout"),
               onTap: signUserOut,
             ),
           ],
@@ -259,12 +348,14 @@ class _HomePageState extends State<HomePage> {
               ),
               ListView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: users.length,
                 itemBuilder: (context, index) {
                   final userData = users[index];
                   final documentId = userData['id'];
-                  final name = userData['firstName'] ?? "Unknown User";
+                  final firstName = userData['firstName'] ?? "Unknown User";
+                  final profileImage =
+                      userData['profileImage']; // Fetch profileImage from DB
 
                   return Card(
                     shape: RoundedRectangleBorder(
@@ -274,11 +365,15 @@ class _HomePageState extends State<HomePage> {
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.blue,
-                        child: Icon(Icons.person, color: Colors.white),
+                        backgroundImage: profileImage != null
+                            ? NetworkImage(profileImage)
+                            : null,
+                        child: profileImage == null
+                            ? const Icon(Icons.person, color: Colors.white)
+                            : null,
                       ),
                       title: Text(
-                        name,
+                        firstName,
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -288,7 +383,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Transform.rotate(
                             angle: -0.5,
-                            child: Icon(Icons.arrow_upward,
+                            child: const Icon(Icons.arrow_upward,
                                 size: 16, color: Colors.green),
                           ),
                           const SizedBox(width: 4),
@@ -303,7 +398,7 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(width: 12),
                           Transform.rotate(
                             angle: 0.5,
-                            child: Icon(Icons.arrow_downward,
+                            child: const Icon(Icons.arrow_downward,
                                 size: 16, color: Colors.red),
                           ),
                           const SizedBox(width: 4),
@@ -317,7 +412,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
-                      trailing: Icon(Icons.location_on, size: 18),
+                      trailing: const Icon(Icons.location_on, size: 18),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -341,7 +436,7 @@ class _HomePageState extends State<HomePage> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => MapPage()),
+            MaterialPageRoute(builder: (context) => const MapPage()),
           );
         },
         child: Container(
