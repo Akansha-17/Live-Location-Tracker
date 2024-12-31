@@ -1,4 +1,5 @@
-import 'package:assignment/pages/auth_page.dart';
+import 'package:assignment/pages/animation.dart';
+// import 'package:assignment/pages/auth_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -27,7 +28,7 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(fontFamily: GoogleFonts.lato().fontFamily),
       routes: {
         // "/": (context) => const LandingPage(),
-        "/": (context) => const AuthPage()
+        "/": (context) => SplashScreen()
         // "/": (context) => const MapPage()
       },
     );
