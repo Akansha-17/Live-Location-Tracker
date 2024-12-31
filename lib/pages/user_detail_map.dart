@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:geocoding/geocoding.dart';
 
 class UserDetailMap extends StatefulWidget {
   final String userId;
@@ -16,14 +17,15 @@ class UserDetailMap extends StatefulWidget {
 
 class _UserDetailMapState extends State<UserDetailMap> {
   final Completer<GoogleMapController> mapController =
-      Completer<GoogleMapController>();
+  Completer<GoogleMapController>();
   LatLng? currentPos;
   LatLng? startPos;
   LatLng? endPos;
   final Set<Polyline> _polylines = <Polyline>{};
   final Set<Marker> _markers = <Marker>{};
   List<Map<String, dynamic>> visitedLocations = [];
-  String currentDate = DateFormat("E, MMM dd yyyy").format(DateTime.now());
+  Map<String, String> addressCache = {}; // Cache for geocoded addresses
+  String currentDate = ""; // To store the current date fetched from Firestore
   double totalDistance = 0.0; // To store the total distance
 
   @override
@@ -46,17 +48,30 @@ class _UserDetailMapState extends State<UserDetailMap> {
 
       final data = snapshot.data() as Map<String, dynamic>?;
 
-      // Validate and parse location data
+      // Validate and parse dailyLocation and date
       final dailyLocation = data?['dailyLocation'] as Map<String, dynamic>?;
-
-      if (dailyLocation == null) {
-        throw Exception("Daily location data is missing.");
+      if (dailyLocation == null || !dailyLocation.containsKey('date')) {
+        throw Exception("Daily location or date data is missing.");
       }
 
+      // Fetch and format the date field
+      final fetchedDate = dailyLocation['date'];
+      String formattedDate = "";
+      if (fetchedDate is Timestamp) {
+        formattedDate =
+            DateFormat("E, MMM dd yyyy").format(fetchedDate.toDate());
+      } else if (fetchedDate is String) {
+        formattedDate =
+            DateFormat("E, MMM dd yyyy").format(DateTime.parse(fetchedDate));
+      } else {
+        throw Exception("Invalid date format.");
+      }
+
+      // Parse startPoint, endPoint, and locations
       final startPoint = dailyLocation['startPoint'] as Map<String, dynamic>?;
       final endPoint = dailyLocation['endPoint'] as Map<String, dynamic>?;
       final locations = (dailyLocation['locations'] as List<dynamic>?)
-              ?.cast<Map<String, dynamic>>() ??
+          ?.cast<Map<String, dynamic>>() ??
           [];
 
       if (startPoint == null || endPoint == null) {
@@ -65,6 +80,7 @@ class _UserDetailMapState extends State<UserDetailMap> {
 
       // Update state with fetched data
       setState(() {
+        currentDate = formattedDate;
         startPos = LatLng(startPoint['lat'], startPoint['lng']);
         endPos = LatLng(endPoint['lat'], endPoint['lng']);
         currentPos = endPos;
@@ -83,7 +99,7 @@ class _UserDetailMapState extends State<UserDetailMap> {
             position: endPos!,
             infoWindow: const InfoWindow(title: "End Location"),
             icon:
-                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           ),
         ]);
 
@@ -94,16 +110,19 @@ class _UserDetailMapState extends State<UserDetailMap> {
           if (loc.containsKey('lat') && loc.containsKey('lng')) {
             final lat = loc['lat'];
             final lng = loc['lng'];
-            _markers.add(
-              Marker(
-                markerId: MarkerId("location_$i"),
-                position: LatLng(lat, lng),
-                infoWindow: InfoWindow(
-                  title: loc['address'] ?? "Location $i",
-                  snippet: "Visited: ${_formatTimestamp(loc['timestamp'])}",
+            _getAddress(lat, lng).then((address) {
+              _markers.add(
+                Marker(
+                  markerId: MarkerId("location_$i"),
+                  position: LatLng(lat, lng),
+                  infoWindow: InfoWindow(
+                    title: address,
+                    snippet: "Visited: ${_formatTimestamp(loc['timestamp'])}",
+                  ),
                 ),
-              ),
-            );
+              );
+              setState(() {});
+            });
           }
         }
 
@@ -137,6 +156,30 @@ class _UserDetailMapState extends State<UserDetailMap> {
     }
   }
 
+  Future<String> _getAddress(double lat, double lng) async {
+    final cacheKey = "$lat,$lng";
+    if (addressCache.containsKey(cacheKey)) {
+      return addressCache[cacheKey]!;
+    }
+
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        final address =
+            "${place.name}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+        addressCache[cacheKey] = address;
+        return address;
+      }
+    } catch (e) {
+      debugPrint("Geocoding failed for $lat,$lng: $e");
+    }
+
+    final fallback = "Lat: $lat, Lng: $lng";
+    addressCache[cacheKey] = fallback;
+    return fallback;
+  }
+
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return "Unknown time";
     final DateTime dateTime = timestamp.toDate();
@@ -154,7 +197,6 @@ class _UserDetailMapState extends State<UserDetailMap> {
     }
   }
 
-  // Calculate total distance traveled using Haversine formula
   double calculateTotalDistance(List<Map<String, dynamic>> locations) {
     double total = 0.0;
     for (int i = 0; i < locations.length - 1; i++) {
@@ -165,7 +207,6 @@ class _UserDetailMapState extends State<UserDetailMap> {
     return total;
   }
 
-  // Haversine formula to calculate distance between two points
   double haversine(LatLng start, LatLng end) {
     const radius = 6371; // Radius of the Earth in km
     double lat1 = start.latitude * pi / 180;
@@ -188,29 +229,26 @@ class _UserDetailMapState extends State<UserDetailMap> {
     return Scaffold(
       body: Stack(
         children: [
-          // Google Map
           currentPos == null
               ? const Center(child: CircularProgressIndicator())
               : GoogleMap(
-                  onMapCreated: (GoogleMapController controller) =>
-                      mapController.complete(controller),
-                  initialCameraPosition:
-                      CameraPosition(target: currentPos!, zoom: 13),
-                  markers: _markers,
-                  polylines: _polylines,
-                ),
-          // Draggable Bottom Sheet with Location Details
+            onMapCreated: (GoogleMapController controller) =>
+                mapController.complete(controller),
+            initialCameraPosition:
+            CameraPosition(target: currentPos!, zoom: 13),
+            markers: _markers,
+            polylines: _polylines,
+          ),
           DraggableScrollableSheet(
             initialChildSize: 0.4,
             minChildSize: 0.3,
             maxChildSize: 0.7,
-            builder: (BuildContext context, ScrollController scrollController) {
+            builder: (context, scrollController) {
               return Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    // Header with Total Sites and Total Distance
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Row(
@@ -224,7 +262,7 @@ class _UserDetailMapState extends State<UserDetailMap> {
                             ),
                           ),
                           Text(
-                            "Distance: ${totalDistance.toStringAsFixed(2)} km", // Display total distance
+                            "Distance: ${totalDistance.toStringAsFixed(2)} km",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -241,8 +279,6 @@ class _UserDetailMapState extends State<UserDetailMap> {
                       ),
                     ),
                     const Divider(),
-
-                    /// Location List
                     Expanded(
                       child: ListView.builder(
                         controller: scrollController,
@@ -251,16 +287,20 @@ class _UserDetailMapState extends State<UserDetailMap> {
                           final loc = visitedLocations[index];
                           final lat = loc['lat'];
                           final lng = loc['lng'];
-                          final address = loc['address'] ??
-                              "Lat: $lat, Lng: $lng"; // Show lat/lng if address is null
                           final time = _formatTimestamp(loc['timestamp']);
 
-                          return ListTile(
-                            leading: const Icon(Icons.location_on),
-                            title: Text(address), // Shows address or lat/lng
-                            subtitle: Text("Time: $time"),
-                            onTap: () {
-                              cameraToPos(LatLng(lat, lng));
+                          return FutureBuilder<String>(
+                            future: _getAddress(lat, lng),
+                            builder: (context, snapshot) {
+                              final address = snapshot.data ?? "Loading...";
+                              return ListTile(
+                                leading: const Icon(Icons.location_on),
+                                title: Text(address),
+                                subtitle: Text("Time: $time"),
+                                onTap: () {
+                                  cameraToPos(LatLng(lat, lng));
+                                },
+                              );
                             },
                           );
                         },

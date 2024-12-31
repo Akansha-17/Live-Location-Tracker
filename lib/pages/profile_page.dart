@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -12,9 +14,10 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _genderController = TextEditingController();
+  final _phoneController = TextEditingController();
   XFile? _image;
   bool _isUploading = false;
   String? _imageUrl;
@@ -26,7 +29,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
     final XFile? pickedImage =
-        await _picker.pickImage(source: ImageSource.gallery);
+    await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedImage != null) {
       setState(() {
@@ -44,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final uri =
-          Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+      Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
       final request = http.MultipartRequest('POST', uri)
         ..fields['upload_preset'] = 'vinove_preset'
         ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
@@ -73,16 +76,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _saveProfile() async {
-    String firstName = _firstNameController.text.trim();
-    String lastName = _lastNameController.text.trim();
+    String fullName = _fullNameController.text.trim();
     String email = _emailController.text.trim();
+    String gender = _genderController.text.trim();
+    String phone = _phoneController.text.trim();
 
-    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty) {
+    if (fullName.isEmpty || email.isEmpty || gender.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Fields cannot be empty")));
       return;
     }
-
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -94,21 +97,22 @@ class _ProfilePageState extends State<ProfilePage> {
       String? photoUrl = await _uploadImage();
 
       DocumentReference userRef =
-          FirebaseFirestore.instance.collection('users').doc(user.uid);
+      FirebaseFirestore.instance.collection('users').doc(user.uid);
 
       await userRef.set({
-        'firstName': firstName,
-        'lastName': lastName,
+        'fullName': fullName,
         'email': email,
+        'gender': gender,
+        'phone': phone,
         'profileImage': photoUrl ?? _imageUrl,
       }, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Profile updated successfully")));
+          const SnackBar(content: Text("Profile updated successfully")));
     } catch (e) {
       print('Error saving profile: $e');
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error saving profile")));
+          .showSnackBar(const SnackBar(content: Text("Error saving profile")));
     }
   }
 
@@ -122,9 +126,10 @@ class _ProfilePageState extends State<ProfilePage> {
         .get();
     if (snapshot.exists) {
       setState(() {
-        _firstNameController.text = snapshot['firstName'] ?? '';
-        _lastNameController.text = snapshot['lastName'] ?? '';
+        _fullNameController.text = snapshot['fullName'] ?? '';
         _emailController.text = snapshot['email'] ?? '';
+        _genderController.text = snapshot['gender'] ?? '';
+        _phoneController.text = snapshot['phone'] ?? '';
         _imageUrl = snapshot['profileImage'];
       });
     }
@@ -145,12 +150,12 @@ class _ProfilePageState extends State<ProfilePage> {
             .update({'profileImage': FieldValue.delete()});
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Profile image removed successfully")),
+          const SnackBar(content: Text("Profile image removed successfully")),
         );
       } catch (e) {
         print('Error removing image from Firestore: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error removing profile image")),
+          const SnackBar(content: Text("Error removing profile image")),
         );
       }
     }
@@ -162,90 +167,136 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserData();
   }
 
+  final _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Profile Page"),
-        backgroundColor: Colors.blue,
+        title: Text("Profile Page",
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: Colors.black,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white,),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundImage: _image == null && _imageUrl == null
-                          ? AssetImage('assets/images/default_profile.png')
-                          : (_image != null
-                              ? FileImage(File(_image!.path))
-                              : NetworkImage(_imageUrl!)) as ImageProvider,
-                    ),
-                    if (_isUploading) CircularProgressIndicator(),
-                    if (_image != null || _imageUrl != null)
-                      Positioned(
-                        top: 70,
-                        right: 0,
-                        child: IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: _removeImage,
-                        ),
+      body: Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 70, horizontal: 20),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: _image == null && (_imageUrl == null || _imageUrl!.isEmpty)
+                            ? const AssetImage('assets/images/default_profile.png')
+                            : (_image != null
+                            ? FileImage(File(_image!.path))
+                            : NetworkImage(_imageUrl!)) as ImageProvider,
                       ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _firstNameController,
-                decoration: InputDecoration(
-                  labelText: 'First Name',
-                  prefixIcon: Icon(Icons.person),
-                ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: _lastNameController,
-                decoration: InputDecoration(
-                  labelText: 'Last Name',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                ),
-                enabled: false,
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+
+                      if (_isUploading) const CircularProgressIndicator(),
+                      if (_image != null || _imageUrl != null)
+                        Positioned(
+                          top: 70,
+                          right: 0,
+                          child: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.black),
+                            onPressed: _removeImage,
+                          ),
+                        ),
+                    ],
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 16),
                 ),
-                child: Text(
-                  'Save Changes',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                const SizedBox(height: 40),
+                TextField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email, color: Colors.black, size: 30),
+                  ),
+                  enabled: false,// enabled: false,
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _fullNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: Icon(Icons.person, color: Colors.black, size: 30),
+                    suffixIcon: Icon(Icons.edit, color: Colors.black, size: 20),
+                  ),
+                ),
+
+
+
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone',
+                    prefixIcon: Icon(Icons.phone, color: Colors.black, size: 30),
+                    suffixIcon: Icon(Icons.edit, color: Colors.black, size: 20),
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly, // Restrict to digits only
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Phone number cannot be empty';
+                    }
+                    if (value.length != 10) {
+                      return 'Phone number must be 10 digits';
+                    }
+                    return null; // Input is valid
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _genderController,
+                  decoration: const InputDecoration(
+                    labelText: 'Gender',
+                    prefixIcon: Icon(Icons.transgender_sharp, color: Colors.black, size: 30),
+                    // suffixIcon: Icon(Icons.arrow_drop_down, color: Colors.black),
+
+                  ),
+                ),
+                const SizedBox(height: 120),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      _saveProfile();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+                  ),
+
+                  child: const Text(
+                    'Save Changes',
+                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

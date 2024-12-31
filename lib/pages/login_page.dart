@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.error_outline,
                   size: 50,
                   color: Colors.white,
@@ -90,11 +90,15 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const SizedBox(height: 50),
 
+
                 // Logo
-                const Icon(
-                  Icons.lock,
-                  size: 100,
+                Image.asset(
+                  'assets/images/mainlogo.png', // Path to your image
+                  width: 100, // Set the width
+                  height: 100, // Set the height
+                  color: Colors.black, // Optional: Apply a color filter
                 ),
+
 
                 const SizedBox(height: 50),
 
@@ -104,6 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(
                     color: Colors.grey[700],
                     fontSize: 16,
+                    fontWeight: FontWeight.bold
                   ),
                 ),
 
@@ -128,14 +133,14 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 10),
 
                 // Forgot password?
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 25.0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
                         'Forgot Password?',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: Colors.deepPurple, fontSize: 16),
                       ),
                     ],
                   ),
@@ -146,7 +151,9 @@ class _LoginPageState extends State<LoginPage> {
                 // Sign-in button
                 MyButton(
                   text: 'Sign In',
+
                   onTap: signUserIn,
+
                 ),
 
                 const SizedBox(height: 50),
@@ -234,7 +241,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Text(
                       'Not a member?',
-                      style: TextStyle(color: Colors.grey[700]),
+                      style: TextStyle(color: Colors.grey[700],fontSize: 18),
                     ),
                     const SizedBox(width: 4),
                     GestureDetector(
@@ -242,7 +249,8 @@ class _LoginPageState extends State<LoginPage> {
                       child: const Text(
                         'Register now',
                         style: TextStyle(
-                          color: Colors.blue,
+                          fontSize: 18,
+                          color: Colors.deepPurple,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
