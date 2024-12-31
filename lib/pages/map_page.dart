@@ -83,15 +83,14 @@ class _MapPageState extends State<MapPage> {
         double lat = userData['dailyLocation']['endPoint']['lat'];
         double lng = userData['dailyLocation']['endPoint']['lng'];
         String userId = doc.id;
-        String firstName = userData['firstName'];
-        String lastName = userData['lastName'];
+        String fullName = userData['fullName'];
 
         // Create a marker with a user icon and display the user's name in the info window
         final marker = Marker(
           markerId: MarkerId(userId),
           position: LatLng(lat, lng),
           infoWindow: InfoWindow(
-              title: '$firstName $lastName'), // Show only user's name
+              title: '$fullName'), // Show only user's name
           icon: BitmapDescriptor.defaultMarkerWithHue(
               BitmapDescriptor.hueAzure), // Set a default user icon color
         );

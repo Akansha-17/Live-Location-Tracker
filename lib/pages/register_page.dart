@@ -14,11 +14,12 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final firrstNameController = TextEditingController();
-  final lastNameController = TextEditingController();
+  final fullNameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final genderController = TextEditingController();
+  final phoneController = TextEditingController();
 
   void signUserUp() async {
     // Show loading indicator
@@ -35,8 +36,8 @@ class _RegisterPageState extends State<RegisterPage> {
         // Create a new user in Firebase Auth
         UserCredential userCredential =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text,
+              email: emailController.text.trim(),
+              password: passwordController.text,
         );
 
         // Get user's unique ID
@@ -45,9 +46,11 @@ class _RegisterPageState extends State<RegisterPage> {
         // Add user details to Firestore
         addUserDetails(
           userId: userId,
-          firstName: firrstNameController.text.trim(),
-          lastName: lastNameController.text.trim(),
+          fullName: fullNameController.text.trim(),
           email: emailController.text.trim(),
+          gender: genderController.text.trim(),
+          phone: phoneController.text.trim(),
+
         );
       } else {
         showErrorMessage("Passwords don't match!");
@@ -61,18 +64,21 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future addUserDetails({
     required String userId,
-    required String firstName,
-    required String lastName,
+    required String fullName,
     required String email,
+    gender,
+    phone,
+
   }) async {
     // Get the default location (can be updated later)
     const double defaultLatitude = 0.0;
     const double defaultLongitude = 0.0;
 
     await FirebaseFirestore.instance.collection('users').doc(userId).set({
-      'firstName': firstName,
-      'lastName': lastName,
+      'fullName': fullName,
       'email': email,
+      'gender' : gender,
+      'phone':phone,
       'location': {
         'latitude': defaultLatitude,
         'longitude': defaultLongitude,
@@ -110,11 +116,11 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 20),
 
               // logo
-              // const Icon(
-              //   Icons.lock,
-              //   size: 50,
-              // ),
-
+              const Icon(
+                Icons.app_registration,
+                size: 50,
+                color: Colors.black,
+              ),
               const SizedBox(height: 25),
 
               // welcome back, you've been missed!
@@ -123,6 +129,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: TextStyle(
                   color: Colors.grey[700],
                   fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
@@ -130,15 +137,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
               // first name textfield
               MyTextField(
-                controller: firrstNameController,
-                hintText: 'First Name',
-                obscureText: false,
-              ),
-              const SizedBox(height: 10),
-              //last name
-              MyTextField(
-                controller: lastNameController,
-                hintText: 'Last Name',
+                controller: fullNameController,
+                hintText: 'Full Name',
                 obscureText: false,
               ),
               const SizedBox(height: 10),
@@ -256,8 +256,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Already have an account',
-                    style: TextStyle(color: Colors.grey[700]),
+                    'Already have an account! ',
+                    style: TextStyle(color: Colors.grey[700], fontSize: 18),
                   ),
                   const SizedBox(width: 4),
                   GestureDetector(
@@ -265,7 +265,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: const Text(
                       'Login now',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: Colors.deepPurple,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
