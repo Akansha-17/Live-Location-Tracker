@@ -29,7 +29,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
     final XFile? pickedImage =
-    await _picker.pickImage(source: ImageSource.gallery);
+        await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedImage != null) {
       setState(() {
@@ -47,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final uri =
-      Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+          Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
       final request = http.MultipartRequest('POST', uri)
         ..fields['upload_preset'] = 'vinove_preset'
         ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
@@ -97,7 +97,7 @@ class _ProfilePageState extends State<ProfilePage> {
       String? photoUrl = await _uploadImage();
 
       DocumentReference userRef =
-      FirebaseFirestore.instance.collection('users').doc(user.uid);
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
 
       await userRef.set({
         'fullName': fullName,
@@ -173,7 +173,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Profile Page",
+        title: Text(
+          "Profile Page",
           style: GoogleFonts.poppins(
             fontSize: 20,
             color: Colors.white,
@@ -182,7 +183,10 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         backgroundColor: Colors.black,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white,),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -201,13 +205,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       CircleAvatar(
                         radius: 60,
-                        backgroundImage: _image == null && (_imageUrl == null || _imageUrl!.isEmpty)
-                            ? const AssetImage('assets/images/default_profile.png')
+                        backgroundImage: _image == null &&
+                                (_imageUrl == null || _imageUrl!.isEmpty)
+                            ? const AssetImage(
+                                'assets/images/default_profile.png')
                             : (_image != null
-                            ? FileImage(File(_image!.path))
-                            : NetworkImage(_imageUrl!)) as ImageProvider,
+                                ? FileImage(File(_image!.path))
+                                : NetworkImage(_imageUrl!)) as ImageProvider,
                       ),
-
                       if (_isUploading) const CircularProgressIndicator(),
                       if (_image != null || _imageUrl != null)
                         Positioned(
@@ -226,34 +231,34 @@ class _ProfilePageState extends State<ProfilePage> {
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email, color: Colors.black, size: 30),
+                    prefixIcon:
+                        Icon(Icons.email, color: Colors.black, size: 30),
                   ),
-                  enabled: false,// enabled: false,
+                  enabled: false, // enabled: false,
                 ),
-
                 const SizedBox(height: 10),
                 TextField(
                   controller: _fullNameController,
                   decoration: const InputDecoration(
                     labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person, color: Colors.black, size: 30),
+                    prefixIcon:
+                        Icon(Icons.person, color: Colors.black, size: 30),
                     suffixIcon: Icon(Icons.edit, color: Colors.black, size: 20),
                   ),
                 ),
-
-
-
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'Phone',
-                    prefixIcon: Icon(Icons.phone, color: Colors.black, size: 30),
+                    prefixIcon:
+                        Icon(Icons.phone, color: Colors.black, size: 30),
                     suffixIcon: Icon(Icons.edit, color: Colors.black, size: 20),
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly, // Restrict to digits only
+                    FilteringTextInputFormatter
+                        .digitsOnly, // Restrict to digits only
                   ],
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -266,14 +271,33 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                 ),
                 const SizedBox(height: 10),
-                TextField(
-                  controller: _genderController,
+                DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
                     labelText: 'Gender',
-                    prefixIcon: Icon(Icons.transgender_sharp, color: Colors.black, size: 30),
-                    // suffixIcon: Icon(Icons.arrow_drop_down, color: Colors.black),
-
+                    prefixIcon: Icon(Icons.transgender_sharp,
+                        color: Colors.black, size: 26),
+                    border: OutlineInputBorder(),
                   ),
+                  value: _genderController.text.isNotEmpty
+                      ? _genderController.text
+                      : null,
+                  items: ['Male', 'Female', 'Other'].map((String gender) {
+                    return DropdownMenuItem<String>(
+                      value: gender,
+                      child: Text(gender),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _genderController.text = newValue ?? '';
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select a gender';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 120),
                 ElevatedButton(
@@ -287,12 +311,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 50, vertical: 16),
                   ),
-
                   child: const Text(
                     'Save Changes',
-                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
