@@ -26,11 +26,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: GoogleFonts.lato().fontFamily),
-      routes: {
-        // "/": (context) => const LandingPage(),
-        "/": (context) => SplashScreen()
-        // "/": (context) => const MapPage()
-      },
+      routes: {"/": (context) => SplashScreen()},
     );
   }
 }

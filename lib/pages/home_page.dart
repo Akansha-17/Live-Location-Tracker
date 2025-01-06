@@ -65,8 +65,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initializeDailyLocation() async {
     try {
       if (user != null) {
-        final userDoc = FirebaseFirestore.instance.collection('users').doc(
-            user!.uid);
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user!.uid);
 
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
@@ -74,11 +74,12 @@ class _HomePageState extends State<HomePage> {
         final userData = await userDoc.get();
         final lastRecordedDate = userData.data()?['dailyLocation']?['date'];
 
-        if (lastRecordedDate == null || (lastRecordedDate is Timestamp &&
-            lastRecordedDate.toDate().isBefore(today))) {
+        if (lastRecordedDate == null ||
+            (lastRecordedDate is Timestamp &&
+                lastRecordedDate.toDate().isBefore(today))) {
           final position = await Geolocator.getCurrentPosition(
-              locationSettings: const LocationSettings(
-                  accuracy: LocationAccuracy.high));
+              locationSettings:
+                  const LocationSettings(accuracy: LocationAccuracy.high));
 
           await userDoc.update({
             'dailyLocation': {
@@ -105,11 +106,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startTrackingLocation() {
-    _timer = Timer.periodic(const Duration(minutes: 2), (_) async {
+    _timer = Timer.periodic(const Duration(minutes: 5), (_) async {
       await _updateLocation();
     });
   }
-
 
   Future<void> _updateLocation() async {
     try {
@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> {
       );
 
       final userDoc =
-      FirebaseFirestore.instance.collection('users').doc(user!.uid);
+          FirebaseFirestore.instance.collection('users').doc(user!.uid);
       final userData = await userDoc.get();
 
       if (userData.exists) {
@@ -171,8 +171,7 @@ class _HomePageState extends State<HomePage> {
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp is Timestamp) {
       final date = timestamp.toDate();
-      return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString()
-          .padLeft(2, '0')}";
+      return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
     }
     return "N/A";
   }
@@ -189,8 +188,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _fetchUserData() async {
     try {
       if (user != null) {
-        final userDoc = FirebaseFirestore.instance.collection('users').doc(
-            user!.uid);
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user!.uid);
         final userData = await userDoc.get();
         setState(() {
           fullName = userData.data()?['fullName'] ?? "No Name";
@@ -262,8 +261,8 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(width: 10, height: 50),
                           const CircleAvatar(
                             backgroundColor: Colors.black12,
-                            child: Icon(
-                                Icons.graphic_eq, color: Colors.deepPurple),
+                            child: Icon(Icons.graphic_eq,
+                                color: Colors.deepPurple),
                           ),
                           const SizedBox(width: 25),
                           Text(
@@ -314,24 +313,24 @@ class _HomePageState extends State<HomePage> {
                         ),
                         subtitle: Row(
                           children: [
-                            const Icon(Icons.arrow_upward, size: 16,
-                                color: Colors.green),
+                            const Icon(Icons.arrow_upward,
+                                size: 16, color: Colors.green),
                             const SizedBox(width: 4),
                             Text(
-                              _formatTimestamp(
-                                  userData['dailyLocation']?['startPoint']?['timestamp']),
+                              _formatTimestamp(userData['dailyLocation']
+                                  ?['startPoint']?['timestamp']),
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: Colors.grey,
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Icon(Icons.arrow_downward, size: 16,
-                                color: Colors.red),
+                            const Icon(Icons.arrow_downward,
+                                size: 16, color: Colors.red),
                             const SizedBox(width: 4),
                             Text(
-                              _formatTimestamp(
-                                  userData['dailyLocation']?['endPoint']?['timestamp']),
+                              _formatTimestamp(userData['dailyLocation']
+                                  ?['endPoint']?['timestamp']),
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: Colors.grey,
@@ -360,28 +359,27 @@ class _HomePageState extends State<HomePage> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MapPage()),
-          );
-        },
-        backgroundColor: Colors.black,
-        label: Row(
-          children: [
-            const Icon(Icons.location_on, size: 24, color: Colors.white),
-            const SizedBox(width: 6),
-            Text(
-               "Map",
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MapPage()),
+            );
+          },
+          backgroundColor: Colors.black,
+          label: Row(
+            children: [
+              const Icon(Icons.location_on, size: 24, color: Colors.white),
+              const SizedBox(width: 6),
+              Text(
+                "Map",
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ],
-        )
-      ),
+            ],
+          )),
     );
   }
 }

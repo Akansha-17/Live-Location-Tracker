@@ -50,6 +50,7 @@ dependencies:
   firebase_storage: ^12.3.6
   geocoding: ^3.0.0
 
+  
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_test:

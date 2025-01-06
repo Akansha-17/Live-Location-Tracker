@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:assignment/pages/home_page.dart';
 import 'package:assignment/pages/members.dart';
 
-
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({Key? key}) : super(key: key);
 
@@ -31,7 +30,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
     try {
       if (user != null) {
         final userDoc =
-        FirebaseFirestore.instance.collection('users').doc(user!.uid);
+            FirebaseFirestore.instance.collection('users').doc(user!.uid);
         final userData = await userDoc.get();
         setState(() {
           fullName = userData.data()?['fullName'] ?? "No Name";
@@ -49,45 +48,46 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return  Drawer(
+    return Drawer(
       child: Column(
         children: [
           GestureDetector(
             onTap: () {
-            // Navigate to the ProfilePage
+              // Navigate to the ProfilePage
               Navigator.push(
-              context,
+                context,
                 MaterialPageRoute(
                   builder: (context) => ProfilePage(),
                 ),
               );
             },
-          child: UserAccountsDrawerHeader(
-            accountName: Text(fullName ?? "No Name"),
-            accountEmail: Text(user?.email ?? "No Email"),
+            child: UserAccountsDrawerHeader(
+              accountName: Text(fullName ?? "No Name"),
+              accountEmail: Text(user?.email ?? "No Email"),
               currentAccountPicture: CircleAvatar(
-              backgroundImage:
-                profileImage != null ? NetworkImage(profileImage!) : null,
-              child: profileImage == null
-                ? const Icon(Icons.person, size: 40, color: Colors.white)
+                backgroundImage:
+                    profileImage != null ? NetworkImage(profileImage!) : null,
+                child: profileImage == null
+                    ? const Icon(Icons.person, size: 40, color: Colors.black)
                     : null,
               ),
-            decoration: const BoxDecoration(color: Colors.black87),
+              decoration: const BoxDecoration(color: Colors.black87),
+            ),
           ),
+          ListTile(
+            leading: const Icon(Icons.abc_outlined),
+            title: const Text("About"),
+            onTap: () {
+              // Navigate to the AttendancePage when tapped
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      AboutPage(), // Make sure this is the correct page
+                ),
+              );
+            },
           ),
-        ListTile(
-          leading: const Icon(Icons.abc_outlined),
-          title: const Text("About"),
-          onTap: () {
-            // Navigate to the AttendancePage when tapped
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AboutPage(), // Make sure this is the correct page
-              ),
-            );
-          },
-        ),
           ListTile(
             leading: const Icon(Icons.group_add),
             title: const Text("Members"),
@@ -96,24 +96,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => UserDetailsSection(users: [],), // Make sure this is the correct page
+                  builder: (context) => UserDetailsSection(
+                    users: [],
+                  ), // Make sure this is the correct page
                 ),
               );
             },
           ),
-        ListTile(
-          leading: const Icon(Icons.graphic_eq),
-          title: const Text("Attendance"),
-          onTap: () {
-            // Navigate to the AttendancePage when tapped
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => HomePage(), // Make sure this is the correct page
-              ),
-            );
-          },
-        ),
+          ListTile(
+            leading: const Icon(Icons.graphic_eq),
+            title: const Text("Attendance"),
+            onTap: () {
+              // Navigate to the AttendancePage when tapped
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      HomePage(), // Make sure this is the correct page
+                ),
+              );
+            },
+          ),
           //
           // const ListTile(
           //   leading: Icon(Icons.timeline),
@@ -138,10 +141,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
               );
             },
           ),
-        ListTile(
-          leading: const Icon(Icons.logout),
-          title: const Text("Logout"),
-          onTap: signUserOut,
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text("Logout"),
+            onTap: signUserOut,
           ),
 
           Divider(
@@ -149,17 +152,17 @@ class _CustomDrawerState extends State<CustomDrawer> {
             color: Colors.grey[400],
           ),
 
-        const ListTile(
-          leading: Icon(Icons.help_outline),
-          title: Text("FAQ & Help"),
+          const ListTile(
+            leading: Icon(Icons.help_outline),
+            title: Text("FAQ & Help"),
           ),
-        const ListTile(
-          leading: Icon(Icons.privacy_tip_outlined),
-          title: Text("Privacy Policy"),
+          const ListTile(
+            leading: Icon(Icons.privacy_tip_outlined),
+            title: Text("Privacy Policy"),
           ),
-        const ListTile(
-          leading: Icon(Icons.update),
-          title: Text("Version: 3.11.4"),
+          const ListTile(
+            leading: Icon(Icons.update),
+            title: Text("Version: 3.11.4"),
           ),
         ],
       ),

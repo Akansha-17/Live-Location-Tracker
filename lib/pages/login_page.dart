@@ -23,7 +23,9 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       builder: (context) {
         return const Center(
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+          ),
         );
       },
     );
@@ -49,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          backgroundColor: Colors.blue,
+          backgroundColor: Colors.black,
           title: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -90,7 +92,6 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const SizedBox(height: 50),
 
-
                 // Logo
                 Image.asset(
                   'assets/images/mainlogo.png', // Path to your image
@@ -99,17 +100,15 @@ class _LoginPageState extends State<LoginPage> {
                   color: Colors.black, // Optional: Apply a color filter
                 ),
 
-
                 const SizedBox(height: 50),
 
                 // Welcome back message
                 Text(
                   'Welcome back you\'ve been missed!',
                   style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold
-                  ),
+                      color: Colors.grey[700],
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 25),
@@ -140,7 +139,8 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Text(
                         'Forgot Password?',
-                        style: TextStyle(color: Colors.deepPurple, fontSize: 16),
+                        style:
+                            TextStyle(color: Colors.deepPurple, fontSize: 16),
                       ),
                     ],
                   ),
@@ -151,9 +151,7 @@ class _LoginPageState extends State<LoginPage> {
                 // Sign-in button
                 MyButton(
                   text: 'Sign In',
-
                   onTap: signUserIn,
-
                 ),
 
                 const SizedBox(height: 50),
@@ -241,7 +239,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Text(
                       'Not a member?',
-                      style: TextStyle(color: Colors.grey[700],fontSize: 18),
+                      style: TextStyle(color: Colors.grey[700], fontSize: 18),
                     ),
                     const SizedBox(width: 4),
                     GestureDetector(

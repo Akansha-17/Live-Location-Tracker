@@ -18,26 +18,29 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  final genderController = TextEditingController();
-  final phoneController = TextEditingController();
+  // final genderController = TextEditingController();
+  // final phoneController = TextEditingController();
 
   void signUserUp() async {
     // Show loading indicator
     showDialog(
-        context: context,
-        builder: (context) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        });
+      context: context,
+      builder: (context) {
+        return const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+          ),
+        );
+      },
+    );
 
     try {
       if (passwordController.text == confirmPasswordController.text) {
         // Create a new user in Firebase Auth
         UserCredential userCredential =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
-              email: emailController.text.trim(),
-              password: passwordController.text,
+          email: emailController.text.trim(),
+          password: passwordController.text,
         );
 
         // Get user's unique ID
@@ -48,9 +51,8 @@ class _RegisterPageState extends State<RegisterPage> {
           userId: userId,
           fullName: fullNameController.text.trim(),
           email: emailController.text.trim(),
-          gender: genderController.text.trim(),
-          phone: phoneController.text.trim(),
-
+          // gender: genderController.text.trim(),
+          // phone: phoneController.text.trim(),
         );
       } else {
         showErrorMessage("Passwords don't match!");
@@ -66,23 +68,22 @@ class _RegisterPageState extends State<RegisterPage> {
     required String userId,
     required String fullName,
     required String email,
-    gender,
-    phone,
-
+    // gender,
+    // phone,
   }) async {
     // Get the default location (can be updated later)
-    const double defaultLatitude = 0.0;
-    const double defaultLongitude = 0.0;
+    // const double defaultLatitude = 0.0;
+    // const double defaultLongitude = 0.0;
 
     await FirebaseFirestore.instance.collection('users').doc(userId).set({
       'fullName': fullName,
       'email': email,
-      'gender' : gender,
-      'phone':phone,
-      'location': {
-        'latitude': defaultLatitude,
-        'longitude': defaultLongitude,
-      },
+      // 'gender': gender,
+      // 'phone': phone,
+      // 'location': {
+      //   'latitude': defaultLatitude,
+      //   'longitude': defaultLongitude,
+      // },
     });
   }
 
@@ -91,7 +92,7 @@ class _RegisterPageState extends State<RegisterPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.blue,
+          backgroundColor: Colors.black,
           title: Center(
             child: Text(
               message,
