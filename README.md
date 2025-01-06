@@ -10,7 +10,7 @@ This project was created by our team of four:
 
 - _Aman Kumar_ [GitHub Profile](https://github.com/Amankumar534)
 - _Saurabh Kumar_ [GitHub Profile](https://github.com/Saurabhkumr)
-- _Shruti Tiwari_ [GitHub Profile]
+- _Shruti Tiwari_ [GitHub Profile](https://github.com/shruti964)
 - _Akansha_ [GitHub Profile](https://github.com/Akansha-17)
 
 ---
