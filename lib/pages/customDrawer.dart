@@ -68,7 +68,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 backgroundImage:
                     profileImage != null ? NetworkImage(profileImage!) : null,
                 child: profileImage == null
-                    ? const Icon(Icons.person, size: 40, color: Colors.black)
+                    ? const Icon(Icons.person, size: 40, color: Colors.white)
                     : null,
               ),
               decoration: const BoxDecoration(color: Colors.black87),
@@ -117,17 +117,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
               );
             },
           ),
-          //
-          // const ListTile(
-          //   leading: Icon(Icons.timeline),
-          //   title: Text("Timelines"),
-          // ),
-
-          // const ListTile(
-          //   leading: Icon(Icons.schedule),
-          //   title: Text("Schedule"),
-          // ),
-          //
           ListTile(
             leading: const Icon(Icons.password),
             title: const Text("Update Profile"),
@@ -146,12 +135,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
             title: const Text("Logout"),
             onTap: signUserOut,
           ),
-
           Divider(
             thickness: 0.7,
             color: Colors.grey[400],
           ),
-
           const ListTile(
             leading: Icon(Icons.help_outline),
             title: Text("FAQ & Help"),
