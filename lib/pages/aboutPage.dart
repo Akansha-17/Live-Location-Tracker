@@ -23,55 +23,104 @@ class AboutPage extends StatelessWidget {
         ),
       ),
       drawer: const CustomDrawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Vinove Logo (you can add an image or logo here)
-            Center(
-              child: Image.asset(
-                'assets/images/about1.png', // Add the logo in your assets folder
-                height: 596,
-                width: 600,
-              ),
-            ),
-            Center(
-              child: Image.asset(
-                'assets/images/about2.png', // Add the logo in your assets folder
-                height: 230,
-                width: 400,
-              ),
-            ),
-            // Contact Information Section
-            Container(
-              color: Colors.white, // Set the background color to white
-              padding: const EdgeInsets.all(16.0), // Add padding for spacing
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Contact Us',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+      body: Container(
+        color: Colors.white, // Set the background color to white
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // All Members Header Section
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 10, height: 50),
+                    const CircleAvatar(
+                      backgroundColor: Color.fromARGB(31, 119, 119, 119),
+                      child: Icon(Icons.group,
+                          color: Color.fromARGB(255, 0, 0, 0)),
                     ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'For more information about our services, please reach out to us at:\n\n'
-                        'Email: contact@vinove.com\n'
-                        'Phone: +1 (123) 456-7890\n'
-                        'Website: www.vinove.com',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black54,
+                    const SizedBox(width: 20),
+                    Text(
+                      "About App",
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              // Image Section
+              Center(
+                child: Column(
+                  children: [
+                    Divider(
+                      thickness: 0.7,
+                      color: Colors.grey[400],
+                    ),
+                    Image.asset(
+                      'assets/images/abm3.png',
+                      height: 350,
+                      width: 650,
+                      fit: BoxFit.cover,
+                    ),
+                    Image.asset(
+                      'assets/images/abmn2.png',
+                      height: 350,
+                      width: 650,
+                      fit: BoxFit.cover,
+                    ),
+                    Image.asset(
+                      'assets/images/abmn3.png',
+                      height: 350,
+                      width: 650,
+                      fit: BoxFit.cover,
+                    ),
+                    Image.asset(
+                      'assets/images/abm4.png',
+                      height: 350,
+                      width: 650,
+                      fit: BoxFit.cover,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Contact Us Section
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16.0),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Contact Us',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'For more information about our services, please reach out to us at:\n\n'
+                      'Email: contact@vinove.com\n'
+                      'Phone: +1 (123) 456-7890\n'
+                      'Website: www.vinove.com',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

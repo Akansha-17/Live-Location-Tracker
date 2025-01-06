@@ -50,7 +50,6 @@ dependencies:
   firebase_storage: ^12.3.6
   geocoding: ^3.0.0
 
-  
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_test:
@@ -78,10 +77,13 @@ flutter:
     - assets/images/mainlogo.png
     - assets/images/google.png
     - assets/images/default_profile.png
-    - assets/images/about1.png
-    - assets/images/about2.png
+    - assets/images/abmn3.png
+    - assets/images/abm4.png
+    - assets/images/abm3.png
+    - assets/images/abmn2.png
 
   #   - images/a_dot_ham.jpeg
+  # - assets/images/about1.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

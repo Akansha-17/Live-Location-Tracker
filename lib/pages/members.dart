@@ -81,38 +81,42 @@ class UserDetailsSection extends StatelessWidget {
                             );
                           },
                           child: Container(
-                            color: Colors.black12, // Set the background color to black
+                            color: const Color.fromARGB(31, 255, 255,
+                                255), // Set the background color to black
                             padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 10, height: 50),
-                              const CircleAvatar(
-
-                                backgroundColor: Colors.black12,
-                                child: Icon(Icons.group,
-                                    color: Colors.deepPurple),
-                              ),
-                              const SizedBox(width: 25),
-                              Text(
-                                "All Members",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.deepPurple,
+                            child: Row(
+                              children: [
+                                const SizedBox(width: 10, height: 50),
+                                const CircleAvatar(
+                                  backgroundColor:
+                                      Color.fromARGB(31, 119, 119, 119),
+                                  child: Icon(Icons.group,
+                                      color: Color.fromARGB(255, 0, 0, 0)),
                                 ),
-                              ),
-                              const SizedBox(width: 205),
-                            ],
+                                const SizedBox(width: 20),
+                                Text(
+                                  "All Members",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color.fromARGB(255, 0, 0, 0),
+                                  ),
+                                ),
+                                const SizedBox(width: 190),
+                              ],
+                            ),
                           ),
                         ),
-                        ),
                       ],
+                    ),
+                    const Divider(
+                      thickness: 0.8,
+                      color: Color.fromARGB(255, 0, 0, 0),
                     ),
                   ],
                 ),
               ),
               ListView.builder(
-
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -121,7 +125,7 @@ class UserDetailsSection extends StatelessWidget {
                   final userData = users[index];
                   final fullName = userData['fullName'] ?? "Unknown User";
                   final profileImage =
-                  userData['profileImage']; // Fetch profileImage from DB
+                      userData['profileImage']; // Fetch profileImage from DB
 
                   return Card(
                     shape: RoundedRectangleBorder(

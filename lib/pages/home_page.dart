@@ -254,7 +254,7 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: GestureDetector(
                     child: Container(
-                      color: Colors.black12,
+                      color: const Color.fromARGB(31, 255, 255, 255),
                       padding: const EdgeInsets.all(8.0),
                       child: Row(
                         children: [
@@ -262,21 +262,25 @@ class _HomePageState extends State<HomePage> {
                           const CircleAvatar(
                             backgroundColor: Colors.black12,
                             child: Icon(Icons.graphic_eq,
-                                color: Colors.deepPurple),
+                                color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                           const SizedBox(width: 25),
                           Text(
                             "Attendance",
                             style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.deepPurple,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: const Color.fromARGB(255, 0, 0, 0),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+                ),
+                const Divider(
+                  thickness: 0.8,
+                  color: Color.fromARGB(255, 0, 0, 0),
                 ),
                 ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
