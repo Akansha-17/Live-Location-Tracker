@@ -9,13 +9,8 @@ This project helps track attendance and monitor the location and routes traveled
 This project was created by our team of four:
 
 - _Aman Kumar_ [GitHub Profile](https://github.com/Amankumar534)
-<<<<<<< HEAD
-- _Saurabh Kumar_ [GitHub Profile]
-- _Shruti Tiwari_ [GitHub Profile]
-=======
 - _Saurabh Kumar_ [GitHub Profile](https://github.com/Saurabhkumr)
 - _Shruti Tiwari_ [GitHub Profile](https://github.com/shruti964)
->>>>>>> 2f170b8421bd10b7de994b9fd19847c569dd08ab
 - _Akansha_ [GitHub Profile](https://github.com/Akansha-17)
 
 ---
